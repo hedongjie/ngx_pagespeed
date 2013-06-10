@@ -69,9 +69,16 @@ http {
 
     pagespeed off;
 
+    set $ua_dependent_ps_capability_list "";
+    set $bypass_cache 1;
+    if ($http_user_agent ~* "Chrome/[0-9][0-9]+\.") {
+      set $ua_dependent_ps_capability_list "ll,ii,dj,jw,ws:";
+      set $bypass_cache 0;
+    }
+    
     location ~ /purge(/.*) {
       allow all;
-      proxy_cache_purge htmlcache $1$is_args$args;
+      proxy_cache_purge htmlcache $ua_dependent_ps_capability_list$1$is_args$args;
     }
 
     location /mod_pagespeed_test/cachable_rewritten_html/ {
@@ -80,7 +87,8 @@ http {
       proxy_cache htmlcache;
       proxy_ignore_headers Cache-Control;
       add_header X-Cache $upstream_cache_status;
-      proxy_cache_key $uri$is_args$args;
+      proxy_cache_key $ua_dependent_ps_capability_list$uri$is_args$args;
+      proxy_cache_bypass $bypass_cache;
     }
   }
 
